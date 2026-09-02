@@ -45,6 +45,87 @@ app.get("/test/:userId", (req, res, next) => {
   res.json({ message: "all good here from /test!" })
 })
 
+//* routes for Artists
+
+const Artist = require("./models/artist.model")
+
+app.post("/artists", (req, res, next) => {
+  console.log(req.body)
+
+  const { name, awardsWon, isTouring, genre } = req.body
+
+  Artist.create({ name, awardsWon, isTouring, genre })
+  .then(() => {
+    console.log("artist created")
+    res.status(201).send("artist created, all good")
+  })
+  .catch((error) => {
+    console.log(error)
+  })
+
+})
+
+app.get("/artists", (req, res, next) => {
+
+  console.log(req.query)
+
+  Artist.find(req.query)
+  .select({isTouring: 0})
+  .sort({name: 1})
+  .then((response) => {
+    
+    res.json(response)
+  })
+  .catch((error) => {
+    res.json(error)
+  })
+
+})
+
+app.get("/artists/:artistId", async (req, res, next) => {
+  console.log(req.params)
+
+  try {
+    const response = await Artist.findById(req.params.artistId)
+
+    if (!response) {
+      //todo cause an error to be send into the client
+    }
+
+    res.json(response)
+    
+  } catch (error) {
+    res.json(error)
+  }
+
+
+})
+
+app.put("/artists/:artistId", async (req, res, next) => {
+
+  console.log(req.params)
+  console.log(req.body)
+  
+  try {
+    
+    const response = await Artist.findByIdAndUpdate(req.params.artistId, {
+      name: req.body.name,
+      awardsWon: req.body.awardsWon,
+      isTouring: req.body.isTouring,
+      genre: req.body.genre
+    }, { 
+      returnDocument: "after", // give the document after the update was applied
+      runValidators: true // check schema validators before making modifications
+    })
+
+    res.json(response)
+    
+  } catch (error) {
+    res.json(error)
+  }
+
+})
+
 // server listen & PORT
 const PORT = process.env.PORT || 5005
 
