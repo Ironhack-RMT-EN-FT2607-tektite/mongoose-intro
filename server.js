@@ -5,126 +5,21 @@ try {
 }
 
 const express = require("express");
-const logger = require("morgan");
-const cors = require("cors");
-const mongoose = require("mongoose")
-
-mongoose.connect("mongodb://localhost:27017/artist-db")
-.then(() => {
-  console.log("connected to the database, yay!")
-})
-.catch(() => {
-  console.log("error connecting to the database")
-})
-
 const app = express();
 
-// all middlewares & configurations here
-app.use(logger("dev"));
-app.use(express.static("public"));
+require("./db") // automatically looks for a file called index inside the folder.
 
-// to allow CORS access from anywhere
-app.use(cors({
-  origin: '*'
-}));
+const applyConfigs = require("./config")
+applyConfigs(app)
 
-// below two configurations will help express routes at correctly receiving data. 
-app.use(express.json()); // recognize an incoming Request Object as a JSON Object
-app.use(express.urlencoded({ extended: false })); // recognize an incoming Request Object as a string or array
-
-
-// all routes here...
+// test route
 app.get("/", (req, res, next) => {
-  res.json({ message: "all good here!" })
+  res.status(200).json({ message: "all good here!" })
 })
 
-app.get("/test/:userId", (req, res, next) => {
-  console.log("req.body", req.body)
-  console.log("req.params", req.params)
-  console.log("req.query", req.query)
-  res.json({ message: "all good here from /test!" })
-})
-
-//* routes for Artists
-
-const Artist = require("./models/artist.model")
-
-app.post("/artists", (req, res, next) => {
-  console.log(req.body)
-
-  const { name, awardsWon, isTouring, genre } = req.body
-
-  Artist.create({ name, awardsWon, isTouring, genre })
-  .then(() => {
-    console.log("artist created")
-    res.status(201).send("artist created, all good")
-  })
-  .catch((error) => {
-    console.log(error)
-  })
-
-})
-
-app.get("/artists", (req, res, next) => {
-
-  console.log(req.query)
-
-  Artist.find(req.query)
-  .select({isTouring: 0})
-  .sort({name: 1})
-  .then((response) => {
-    
-    res.json(response)
-  })
-  .catch((error) => {
-    res.json(error)
-  })
-
-})
-
-app.get("/artists/:artistId", async (req, res, next) => {
-  console.log(req.params)
-
-  try {
-    const response = await Artist.findById(req.params.artistId)
-
-    if (!response) {
-      //todo cause an error to be send into the client
-    }
-
-    res.json(response)
-    
-  } catch (error) {
-    res.json(error)
-  }
-
-
-})
-
-app.put("/artists/:artistId", async (req, res, next) => {
-
-  console.log(req.params)
-  console.log(req.body)
-  
-  try {
-    
-    const response = await Artist.findByIdAndUpdate(req.params.artistId, {
-      name: req.body.name,
-      awardsWon: req.body.awardsWon,
-      isTouring: req.body.isTouring,
-      genre: req.body.genre
-    }, { 
-      returnDocument: "after", // give the document after the update was applied
-      runValidators: true // check schema validators before making modifications
-    })
-
-    res.json(response)
-    
-  } catch (error) {
-    res.json(error)
-  }
-
-})
+// all the other routes
+const indexRouter = require("./routes/index.routes.js")
+app.use("/api", indexRouter)
 
 // server listen & PORT
 const PORT = process.env.PORT || 5005
